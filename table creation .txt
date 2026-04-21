@@ -1,0 +1,250 @@
+DROP TABLE IF EXISTS deposit CASCADE;
+DROP TABLE IF EXISTS outreach CASCADE;
+DROP TABLE IF EXISTS applicant CASCADE;
+DROP TABLE IF EXISTS sevis CASCADE;
+
+
+-- SEVIS (Create FIRST – referenced by others)
+CREATE TABLE sevis (
+    sevis_id TEXT PRIMARY KEY,
+    nonimmigrant_id BIGINT,
+    status_change_date DATE,
+    surname_or_primary_name TEXT,
+    given_name TEXT,
+    preferred_name TEXT,
+    country_of_birth TEXT,
+    date_of_birth DATE,
+    country_of_citizenship TEXT,
+    gender TEXT,
+    foreign_address_1 TEXT,
+    foreign_address_2 TEXT,
+    foreign_city TEXT,
+    foreign_country TEXT,
+    foreign_postal_code TEXT,
+    email TEXT,
+    no_phone_indicator TEXT,
+    number_of_months_for_funding NUMERIC,
+    tuition_fees NUMERIC,
+    living_expenses NUMERIC,
+    dependent_expenses NUMERIC,
+    other_costs NUMERIC,
+    student_personal_funds NUMERIC,
+    funds_from_this_school NUMERIC,
+    school_fund_type TEXT,
+    funds_from_other_sources NUMERIC,
+    other_source_type TEXT,
+    on_campus_employment TEXT,
+    date_of_last_event DATE,
+    i_20_issue_reason TEXT,
+    education_level TEXT,
+    major_1_code TEXT,
+    major_1_description TEXT,
+    major_2_code TEXT,
+    major_2_cip_2020_conversion TEXT,
+    minor_code TEXT,
+    minor_cip_2020_conversion TEXT,
+    program_start_date DATE,
+    program_end_date DATE,
+    initial_session_start_date DATE,
+    current_session_start_date DATE,
+    school_requires_english_proficiency TEXT,
+    student_has_english_proficiency TEXT,
+    i_901_transaction_type TEXT,
+    i_901_transaction_date DATE,
+    i_901_transaction_amount NUMERIC,
+    i_901_fee_payment_receipt TEXT,
+    overall_remarks TEXT,
+    opt_portal TEXT
+);
+
+CREATE TABLE applicant (
+    reference_id BIGINT PRIMARY KEY,
+    given_name TEXT,
+    last_name TEXT,
+    major TEXT,
+    recieved_at TEXT,
+    university TEXT,
+    citizenship TEXT,
+    intake TEXT,
+    phone_number TEXT,
+    street_1 TEXT,
+    city TEXT,
+    region TEXT,
+    postal TEXT,
+    email_id TEXT,
+    date_of_birth DATE,
+    most_recent_released_decision TEXT,
+    application_source TEXT,
+    is_global_grad TEXT,
+    sevis_id TEXT,
+    official_university_email_address TEXT,
+    application_agency_code TEXT,
+    created_at TEXT,
+    modified_at TEXT,
+    sevis_id_missing TEXT,
+    reference_id_capped TEXT,
+    recieved_at_datetime TEXT,
+    created_at_datetime TEXT,
+    modified_at_datetime TEXT,
+
+    CONSTRAINT fk_applicant_sevis
+        FOREIGN KEY (sevis_id)
+        REFERENCES sevis(sevis_id)
+        ON DELETE SET NULL
+);
+
+-- Match by email (most reliable)
+UPDATE applicant app
+SET sevis_id = sev.sevis_id
+FROM sevis sev
+WHERE app.official_university_email_address = sev.email
+   OR app.email_id = sev.email;
+
+-- Match by name + DOB + university
+UPDATE applicant app
+SET sevis_id = sev.sevis_id
+FROM sevis sev
+WHERE LOWER(app.given_name) = LOWER(sev.given_name)
+  AND LOWER(app.last_name) = LOWER(sev.surname_or_primary_name)
+  AND app.date_of_birth = sev.date_of_birth
+  AND app.university ILIKE '%' || split_part(sev.education_level, ' ', 1) || '%'
+  AND app.sevis_id IS NULL;
+
+-- See matched records
+SELECT COUNT(*) as total_applicants,
+       COUNT(sevis_id) as matched_with_sevis,
+       COUNT(*) - COUNT(sevis_id) as unmatched
+FROM applicant;
+
+
+-- CONNECT (Strong FK to APPLICANT)
+CREATE TABLE deposit (
+    id SERIAL PRIMARY KEY,  -- Surrogate primary key
+    reference_id BIGINT ,
+    deposit_status TEXT,
+    assigned TEXT,
+    received_at TIMESTAMP,
+    university TEXT,
+    i_20_status TEXT,
+    created_at TIMESTAMP,
+    received_date DATE,
+    
+    CONSTRAINT fk_deposit_applicant
+        FOREIGN KEY (reference_id)
+        REFERENCES applicant(reference_id)
+        ON DELETE CASCADE
+    -- NO unique constraint on reference_id - allows duplicates
+);
+
+SELECT * FROM deposit WHERE reference_id = 1320577;
+
+-- Add reference_id column to outreach table
+CREATE TABLE outreach (
+    id SERIAL PRIMARY KEY,
+    student_full_name TEXT,
+    program_of_interest TEXT,
+    term TEXT,
+    application_source TEXT,
+    global_grad_indicator TEXT,
+    deposit_paid TEXT,
+    accepted_admission TEXT,
+    sevis_id TEXT,
+    i_20_in_slate TEXT,
+    person_email TEXT,
+    person_slu_email_address TEXT,
+    i_901_status TEXT,
+    citizenship_primary TEXT,
+    application_agency_code TEXT,
+    contact_number TEXT,
+    student_status TEXT,
+    remarks TEXT,
+    appointment_date DATE,
+    applicant_reference_id BIGINT,  -- New column to link to applicant
+    
+    -- Foreign keys
+    CONSTRAINT fk_outreach_sevis
+        FOREIGN KEY (sevis_id)
+        REFERENCES sevis(sevis_id)
+        ON DELETE SET NULL,
+    
+    CONSTRAINT fk_outreach_applicant
+        FOREIGN KEY (applicant_reference_id)
+        REFERENCES applicant(reference_id)
+        ON DELETE SET NULL
+);
+
+
+CREATE VIEW applicant_outreach_view AS
+SELECT
+    a.reference_id,
+    a.given_name,
+    a.last_name,
+    a.email_id,
+    o.program_of_interest,
+    o.student_status,
+    o.appointment_date
+FROM applicant a
+LEFT JOIN outreach o
+  ON LOWER(a.email_id) = LOWER(o.person_email);
+
+
+-- Insights That Require Further Validation in Week 3
+
+--   Validate SEVIS ID availability by admission decision 
+SELECT
+    most_recent_released_decision,
+    COUNT(*) AS total_applicants,
+    COUNT(sevis_id) AS sevis_available,
+    COUNT(*) - COUNT(sevis_id) AS sevis_missing
+FROM applicant
+GROUP BY most_recent_released_decision
+ORDER BY total_applicants DESC;
+
+
+--  Validate outcome quality by application source
+SELECT
+    a.application_source,
+    COUNT(DISTINCT a.reference_id) AS total_applicants,
+    COUNT(DISTINCT CASE 
+        WHEN a.most_recent_released_decision IS NOT NULL THEN a.reference_id 
+    END) AS accepted_applicants,
+    COUNT(DISTINCT CASE 
+        WHEN d.deposit_status = 'Yes' THEN a.reference_id 
+    END) AS deposits_paid
+FROM applicant a
+LEFT JOIN deposit d
+    ON a.reference_id = d.reference_id
+GROUP BY a.application_source
+ORDER BY total_applicants DESC;
+
+--  Validate visa outcomes by citizenship
+-- 
+SELECT
+    o.citizenship_primary,
+    o.student_status,
+    COUNT(*) AS student_count
+FROM outreach o
+WHERE o.student_status IS NOT NULL
+GROUP BY o.citizenship_primary, o.student_status
+ORDER BY student_count DESC;
+
+-- Validate pipeline progression by program
+
+SELECT
+    o.program_of_interest,
+    COUNT(*) AS total_students,
+    COUNT(CASE WHEN o.accepted_admission = 'Yes' THEN 1 END) AS accepted,
+    COUNT(CASE WHEN o.deposit_paid = 'Yes' THEN 1 END) AS deposits_paid,
+    COUNT(CASE WHEN o.student_status = 'Visa approved' THEN 1 END) AS visa_approved
+FROM outreach o
+GROUP BY o.program_of_interest
+ORDER BY total_students DESC;
+
+
+--  Validate intake-based applicant distribution
+SELECT
+    intake,
+    COUNT(*) AS applicant_count
+FROM applicant
+GROUP BY intake
+ORDER BY applicant_count DESC;
