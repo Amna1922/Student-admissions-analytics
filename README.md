@@ -38,6 +38,11 @@ A functional Looker Studio dashboard was developed based on the cleaned data. It
 
 🔗 **[Link to Looker Studio Dashboard](https://lookerstudio.google.com/u/0/reporting/74096464-96ff-45bc-8ecc-ab8535a3d44c/page/avllF/edit)**
 
+## 👥 Team
+
+- **Amna Zubair** - Data Analytics & Visualization
+- **Sathwika Rupireddy** - Data Analytics & Visualization
+
 ## 📅 Project Timeline
 
 - **Deliverable 1:** Data cleaning, EDA, and missing value imputation.
