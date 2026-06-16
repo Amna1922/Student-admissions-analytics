@@ -25,30 +25,6 @@ The pipeline includes:
 - **Visualization:** Looker Studio
 - **Version Control:** Git & GitHub
 
-## 📁 Project Structure
-.
-├── data/ # Raw and cleaned CSV files (if not sensitive)
-│ ├── applicant.csv
-│ ├── connect.csv
-│ ├── outreach.csv
-│ └── sevis.csv
-├── notebooks/ # Jupyter notebooks for EDA and cleaning
-│ ├── Week-1_EDA_and_Cleaning.ipynb
-│ └── Database_Preprocessing.ipynb
-├── scripts/ # Python scripts for data cleaning and upload
-│ └── clean_and_upload.py
-├── sql/ # SQL scripts for schema definition and validation
-│ ├── schema.sql
-│ └── validation_queries.sql
-├── docs/ # Detailed technical documentation
-│ └── TECHNICAL_README.md
-├── reports/ # Weekly progress reports (PDFs)
-│ ├── Week-1_Amna Zubair_Team-16.pdf
-│ ├── Week-2_Amna Zubair_Team-16.pdf
-│ └── Week-3_Amna Zubair_Team-16.pdf
-└── README.md # This file
-
-
 ## 🎯 Key Insights
 
 - **Applicant Concentration:** The applicant pool is heavily concentrated in a few countries (India, Nigeria, Ghana) and a select group of graduate programs (Analytics, Information Systems, MBA), indicating strong demand in specific markets.
@@ -61,13 +37,6 @@ The pipeline includes:
 A functional Looker Studio dashboard was developed based on the cleaned data. It can be viewed here:
 
 🔗 **[Link to Looker Studio Dashboard](https://lookerstudio.google.com/u/0/reporting/74096464-96ff-45bc-8ecc-ab8535a3d44c/page/avllF/edit)**
-
-*Please note: The dashboard may not be publicly accessible if it is set to private.*
-
-## 👥 Team
-
-- **Amna Zubair** - Data Analytics & Visualization
-- **Sathwika Rupireddy** - Data Analytics & Visualization
 
 ## 📅 Project Timeline
 
