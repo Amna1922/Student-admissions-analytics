@@ -40,6 +40,6 @@ A functional Looker Studio dashboard was developed based on the cleaned data. It
 
 ## 📅 Project Timeline
 
-- **Week 1:** Data cleaning, EDA, and missing value imputation.
-- **Week 2:** Database setup, dashboard development, and initial insights.
-- **Week 3:** Insight validation and reporting.
+- **Deliverable 1:** Data cleaning, EDA, and missing value imputation.
+- **Deliverable 2:** Database setup, dashboard development, and initial insights.
+- **Deliverable 3:** Insight validation and reporting.
